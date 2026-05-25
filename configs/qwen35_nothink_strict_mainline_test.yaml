@@ -1,0 +1,48 @@
+model_name: "/data_1/ldq/models/Qwen3.5-27B"
+attn_implementation: "sdpa"
+mixed_precision: true
+enable_thinking: false
+
+prompt_style: "reasoning_strict"
+reasoning_strategy: "two_stage"
+sample_fps: 1.0
+
+max_new_tokens_reference: 96
+max_new_tokens_reasoning: 96
+max_new_tokens_description: 160
+
+do_sample_reference: true
+do_sample_reasoning: true
+do_sample_description: true
+temperature_reference: 1.0
+temperature_reasoning: 1.0
+temperature_description: 1.0
+temperature_synthesis: 1.0
+top_p: 0.95
+top_k: 20
+min_p: 0.0
+repetition_penalty: 1.0
+reasoning_samples: 1
+self_consistency_samples: 1
+
+embedding_pooling: "weighted_mean"
+weighting_scheme: "basic"
+gallery_weighting_scheme: "basic"
+query_weighting_scheme: "edit_aware"
+edit_term_boost: 4.0
+late_token_ratio: 0.6
+structural_token_weight: 0.0
+normalize_embeddings: true
+
+split: "all"
+exclude_reference: true
+top_k_predictions: 50
+submission_mode: "test"
+
+artifact_dir: "artifacts/testfull_mainline"
+gallery_dir: "artifacts/testfull_mainline/gallery"
+gallery_text_log_dir: "artifacts/testfull_mainline/gallery_text"
+query_cache_dir: "artifacts/testfull_mainline/query_cache"
+save_query_cache: true
+reuse_query_cache: true
+query_embedding_dir: "artifacts/testfull_mainline/query_embeddings"

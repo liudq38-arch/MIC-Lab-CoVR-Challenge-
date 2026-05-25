@@ -1,0 +1,158 @@
+\documentclass[10pt,twocolumn,letterpaper]{article}
+
+% Replace this preamble with the official CVPR template preamble when exporting.
+\usepackage[margin=0.75in]{geometry}
+\usepackage{times}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{hyperref}
+
+\title{Reason-Then-Retrieve for CoVR-R Composed Video Retrieval}
+
+\author{
+MIC Lab\\
+}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We describe a zero-shot system for CoVR-R reason-aware composed video retrieval.
+Given a reference video and an edit instruction, the goal is to retrieve the target video from a gallery.
+Our method uses a vision-language model to transform the composed query into a target-video representation before retrieval.
+The model generates retrieval-oriented gallery descriptions, structured edit reasoning, and edited target-video descriptions.
+Dense retrieval is performed by pooling generated-token hidden states into embeddings and ranking candidates by cosine similarity.
+We further add a TF-IDF branch over the generated descriptions and combine dense and sparse scores.
+The resulting pipeline emphasizes object identity, action order, final state, scene context, and transition cues.
+\end{abstract}
+
+\section{Introduction}
+
+Composed video retrieval differs from standard text-video retrieval because the target is specified indirectly.
+The query contains a reference video $V_r$ and an edit instruction $E$, while the desired target video $V_t$ must be inferred by applying the edit to the reference.
+This setup is challenging when edits modify fine-grained states, action order, hand-object interactions, background context, or camera transitions.
+
+Our system treats the task as a two-step reasoning and retrieval problem.
+First, a vision-language model interprets the reference video and the edit instruction to produce a target-oriented description.
+Second, both the target-oriented query and the gallery videos are mapped into retrieval features.
+We combine hidden-state dense embeddings with sparse lexical matching to benefit from both semantic abstraction and exact visual terms.
+
+\section{Method}
+
+\subsection{Overview}
+
+The pipeline has four stages:
+
+\begin{enumerate}
+    \item gallery description and embedding,
+    \item query-side edit reasoning and target description,
+    \item dense and sparse retrieval,
+    \item score fusion.
+\end{enumerate}
+
+The system is zero-shot and does not fine-tune the underlying model.
+All task adaptation is handled through prompt design, hidden-state pooling, and retrieval-score fusion.
+
+\subsection{Gallery Representation}
+
+For every gallery video, the model generates a compact retrieval-oriented description.
+The prompt asks for fields such as the main object, secondary objects, object attributes, surface and scene, action chain, hand interaction, final state, scene transition, camera transition, and distractors.
+This structured form helps preserve fine-grained temporal and visual evidence that is often lost in a generic caption.
+
+We extract a dense representation from the generated tokens.
+Let $h_i$ denote the hidden state associated with generated token $i$ and $w_i$ its token weight.
+The pooled vector is
+\begin{equation}
+    g = \frac{\sum_i w_i h_i}{\sum_i w_i}.
+\end{equation}
+Structural field labels and common stop words receive small weights, while content tokens describing objects, actions, and states dominate the pooled representation.
+The final gallery vector is L2-normalized.
+
+\subsection{Query Representation}
+
+For each query, the model first observes the reference video and the edit instruction.
+It produces structured edit reasoning that records which elements should be preserved, removed, or replaced, and what the target action chain and final state should be.
+The model then generates a target-video description conditioned on the reference video, edit instruction, and reasoning trace.
+
+The query embedding is pooled from the generated target-description tokens using the same weighted hidden-state pooling strategy.
+Edit-relevant terms extracted from the instruction and reasoning trace receive additional weight.
+This biases the representation toward the intended target video rather than the unmodified source.
+
+\subsection{Dense Retrieval}
+
+Dense retrieval ranks candidates using cosine similarity between the query embedding $q$ and each gallery embedding $g$:
+\begin{equation}
+    s_{\mathrm{dense}}(q,g) = \frac{q^\top g}{\|q\|\|g\|}.
+\end{equation}
+The ranked list from this branch captures broad semantic compatibility between the inferred target and gallery videos.
+
+\subsection{TF-IDF Retrieval}
+
+Dense retrieval can underweight exact object names, surfaces, and state words.
+We therefore add a text branch using TF-IDF over the generated query and gallery descriptions.
+The sparse branch uses unigram and bigram features with sublinear term frequency.
+It provides a complementary score $s_{\mathrm{tfidf}}$ that often helps when exact visual terms are discriminative.
+
+\subsection{Score Fusion}
+
+Dense and sparse scores are normalized per query and combined:
+\begin{equation}
+    s_{\mathrm{final}} =
+    \alpha \hat{s}_{\mathrm{dense}} +
+    (1-\alpha)\hat{s}_{\mathrm{tfidf}}.
+\end{equation}
+We use split-specific fusion weights selected on development experiments.
+The final ranking is obtained by sorting candidates by $s_{\mathrm{final}}$.
+
+\section{Implementation Details}
+
+The main implementation files are:
+
+\begin{itemize}
+    \item \texttt{generate\_gallery\_embeddings.py} for gallery description and embedding extraction,
+    \item \texttt{run\_retrieval.py} for query reasoning, query embeddings, and dense retrieval,
+    \item \texttt{evaluate\_text\_similarity.py} for TF-IDF retrieval,
+    \item \texttt{apply\_score\_fusion.py} for dense/sparse score fusion,
+    \item \texttt{prompts.py} for the prompt families.
+\end{itemize}
+
+Video inputs are processed at a low sampling rate suitable for retrieval.
+Generated hidden states are pooled into dense vectors and normalized before cosine search.
+The code supports separate WebVid and Something-Something V2 processing, allowing split-specific prompts and fusion settings.
+
+\section{Ablation And Analysis}
+
+We found that dense retrieval and sparse generated-text retrieval are complementary.
+Dense embeddings improve semantic matching and tolerate paraphrases, while TF-IDF preserves exact object, surface, and action terms.
+Fusing the two branches consistently improved the robustness of the ranking in development experiments.
+
+Prompt design was especially important for action-centric videos.
+Descriptions that only summarize the overall scene often miss the temporal order or the final settled state.
+Structured prompts that explicitly preserve action chains, end states, scene transitions, and hand-object interactions produced more useful retrieval features.
+
+\section{Observations}
+
+The main error source is often not the retrieval mechanism itself, but the fidelity of the generated text representation.
+If the gallery description misses a key action step or the query-side target description keeps removed source content, both dense and sparse retrieval can be misled.
+Conversely, when the generated descriptions preserve the edit-critical evidence, simple cosine retrieval plus sparse fusion can be effective.
+
+\section{Limitations}
+
+The approach depends on the quality and consistency of the vision-language model's generated descriptions.
+It is also computationally expensive because gallery and query videos require model generation before retrieval.
+The score-fusion weights are selected empirically and may need adjustment under a different data distribution.
+
+\section{Conclusion}
+
+We presented a zero-shot reason-then-retrieve system for composed video retrieval.
+The method converts a reference-video edit query into a target-video description, extracts hidden-state embeddings from generated tokens, and combines dense retrieval with sparse TF-IDF matching.
+The key practical insight is to preserve edit-critical evidence such as object identity, action order, final state, and scene transitions throughout both query and gallery representations.
+
+{\small
+\bibliographystyle{ieee_fullname}
+\bibliography{references}
+}
+
+\end{document}

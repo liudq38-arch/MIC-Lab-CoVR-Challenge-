@@ -1,0 +1,11 @@
+numpy
+pyyaml
+torch
+torchvision
+transformers
+qwen-vl-utils
+tqdm
+scikit-learn
+accelerate
+sentencepiece
+protobuf

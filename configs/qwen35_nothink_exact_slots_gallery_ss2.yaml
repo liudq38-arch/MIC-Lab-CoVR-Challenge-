@@ -1,0 +1,52 @@
+model_name: "/data_1/ldq/models/Qwen3.5-27B"
+attn_implementation: "sdpa"
+mixed_precision: true
+enable_thinking: false
+
+prompt_style: "reasoning_exact_slots_gallery"
+reasoning_strategy: "two_stage"
+sample_fps: 1.0
+
+max_new_tokens_reference: 260
+max_new_tokens_reasoning: 180
+max_new_tokens_description: 260
+
+do_sample_reference: false
+do_sample_reasoning: false
+do_sample_description: false
+temperature_reference: 1.0
+temperature_reasoning: 1.0
+temperature_description: 1.0
+temperature_synthesis: 1.0
+top_p: 0.95
+top_k: 20
+min_p: 0.0
+repetition_penalty: 1.0
+reasoning_samples: 1
+self_consistency_samples: 1
+
+embedding_pooling: "weighted_mean"
+weighting_scheme: "basic"
+gallery_weighting_scheme: "basic"
+query_weighting_scheme: "edit_aware"
+edit_term_boost: 4.0
+late_token_ratio: 0.7
+structural_token_weight: 0.0
+edit_window_radius: 4
+edit_match_weight: 4.0
+edit_neighbor_weight: 1.8
+edit_background_weight: 0.2
+normalize_embeddings: true
+
+split: "ss2"
+exclude_reference: true
+top_k_predictions: 50
+submission_mode: "dev"
+
+artifact_dir: "artifacts"
+gallery_dir: "artifacts/gallery_exact_slots_ss2"
+gallery_text_log_dir: "artifacts/gallery_text_exact_slots_ss2"
+query_cache_dir: "artifacts/query_cache_exact_slots_ss2"
+save_query_cache: true
+reuse_query_cache: true
+query_embedding_dir: "artifacts/query_embeddings_exact_slots_ss2"
