@@ -1,6 +1,6 @@
 # MIC-Lab CoVR-R Challenge
 
-This repository contains the minimal code and technical-report source for our CoVR-R challenge method.
+This repository contains the minimal code for our CoVR-R challenge method.
 
 ## Method
 
@@ -19,7 +19,6 @@ The system is a zero-shot reason-then-retrieve pipeline:
 ```text
 .
 ├── configs/                       # retrieval configs
-├── report/                        # editable technical report source
 ├── config.py
 ├── covr_data.py
 ├── model_runner.py
@@ -121,14 +120,3 @@ python3 apply_score_fusion.py \
 ```
 
 Repeat the same commands with `--split ss2` for the SS2 branch.
-
-## Technical Report
-
-The editable report source is in:
-
-```text
-report/covr_report.tex
-report/references.bib
-```
-
-Use the official CVPR template when exporting the final PDF.
